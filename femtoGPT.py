@@ -374,7 +374,11 @@ val_loss_log = os.path.join(log_dir, f"val_loss.txt")
 for step in range(max_steps):
     t0 = time.time()
     # evaluation loop
+    # once in a while save model weights
+    if step % 1000 == 0:
+        torch.save(model, os.path.join(log_dir, f"step_{step}_weights.pt"))
 
+    # once in a while evaluate val loss
     if step % 100 == 0:
         model.eval()
         val_loader.reset()
