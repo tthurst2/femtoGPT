@@ -1,5 +1,7 @@
 import inspect
+import os
 import time
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
@@ -263,17 +265,29 @@ class GPT(nn.Module):
         return optimizer
 
 
+def load_tokens(filename):
+    npt = np.load(filename)
+    ptt = torch.tensor(npt, dtype=torch.long)
+    return ptt
+
+
 class DataLoader:
-    def __init__(self, B, T):
+    def __init__(self, B, T, split):
         self.B, self.T = B, T
-        with open("dataset/test.txt") as f:
-            text = f.read()
-        enc = tiktoken.get_encoding("gpt2")
-        self.current_position = 0
-        tokens = enc.encode(text)
-        self.tokens = torch.tensor(tokens)
-        print(f"loaded {len(self.tokens)} tokens")
-        print(f"1 epoch = {len(self.tokens) // (B*T)} batches")
+        assert split in {'train', 'va'}
+
+        # get shard filenames
+        data_root = "dataset/edu_fineweb10B"
+        shards = os.listdir(data_root)
+        shards = sorted([s for s in shards if split in s])
+        self.shards = [os.path.join(data_root, s) for s in shards]
+        assert len(shards) > 0, f"no shards found for split {split}"
+        print(f"found {len(shards)} shards for split {split}")
+
+        # state, init at shard zero
+        self.current_shard = 0
+        self.tokens = load_tokens(self.shards[self.current_shard])
+        self.current_position = self.B * self.T
 
     def next_batch(self):
         B, T = self.B, self.T
@@ -314,7 +328,7 @@ grad_accum_steps = total_batch_size // (B * T)
 print(f"total desired batch size: {total_batch_size}")
 print(f"=> calculated gradient accumulation steps: {grad_accum_steps}")
 
-train_loader = DataLoader(B=B, T=T)
+train_loader = DataLoader(B=B, T=T, split="train")
 
 torch.set_float32_matmul_precision('high')
 
