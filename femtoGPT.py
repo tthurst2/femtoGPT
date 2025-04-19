@@ -342,8 +342,8 @@ model = torch.compile(model)
 # learning rate decay from GPT-3 paper (since GPT-2 doesn't explain training)
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-warmup_steps = 10
-max_steps = 50
+warmup_steps = 715
+max_steps = 19073
 
 
 def get_lr(it):
