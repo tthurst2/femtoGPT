@@ -380,7 +380,8 @@ for step in range(max_steps):
                     logits, loss = model(x, y)
                 # gradient accumulation fix
                 loss = loss / val_loss_steps
-                val_loss_accum = loss.detach()
+                val_loss_accum += loss.detach()
+            print(f"validation loss: {val_loss_accum.item():.4f}")
 
     # training loop
     model.train()
