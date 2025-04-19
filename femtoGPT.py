@@ -276,12 +276,13 @@ torch.manual_seed(1337)
 if torch.cuda.is_available():
     torch.cuda.manual_seed(1337)
 
-train_loader = DataLoader(B=8, T=1024)
+train_loader = DataLoader(B=6, T=1024)
 
 torch.set_float32_matmul_precision('high')
 
 model = GPT(GPTConfig())
 model.to(device)
+model = torch.compile(model)
 
 # optimize
 optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
