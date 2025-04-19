@@ -4,7 +4,7 @@ An implementation of GPT-2(124 m) with not a lot of code
 # Requirements
 Python 3.9+
 ```
-pip install -r requiremnts.txt
+pip install -r requirements.txt
 ```
 
 # Training
