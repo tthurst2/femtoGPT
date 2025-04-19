@@ -355,7 +355,7 @@ model.to(device)
 model = torch.compile(model)
 
 # learning rate decay from GPT-3 paper (since GPT-2 doesn't explain training)
-max_lr = 6e-4
+max_lr = 1e-3
 min_lr = max_lr * 0.1
 warmup_steps = 715
 max_steps = 19073
@@ -391,7 +391,7 @@ for step in range(max_steps):
                 val_loss_accum += loss.detach()
             print(f"validation loss: {val_loss_accum.item():.4f}")
             with open(val_loss_log, "a") as f:
-                f.write(f"{step}, {val_loss_accum:.4f}")
+                f.write(f"{step}, {val_loss_accum.item():.4f}\n")
 
     # once in a while generate from the model
     if step % 100 == 0:
@@ -460,4 +460,4 @@ for step in range(max_steps):
     print(
         f"step {step}, loss: {loss_accum.item():.6f}, lr: {lr:.4e} dt: {dt:.2f}ms, tok/sec: {tokens_per_sec:.2f}, norm: {norm:.4f}")
     with open(train_loss_log, "a") as f:
-        f.write(f"{step} train {loss_accum.item():.6f}\n")
+        f.write(f"{step}, {loss_accum.item():.6f}\n")
