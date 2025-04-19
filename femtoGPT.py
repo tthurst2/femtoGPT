@@ -379,7 +379,7 @@ for step in range(max_steps):
         torch.save(model, os.path.join(log_dir, f"step_{step}_weights.pt"))
 
     # once in a while evaluate val loss
-    if step % 100 == 0:
+    if step % 50 == 0:
         model.eval()
         val_loader.reset()
         with torch.no_grad():
@@ -396,7 +396,6 @@ for step in range(max_steps):
             print(f"validation loss: {val_loss_accum.item():.4f}")
             with open(val_loss_log, "a") as f:
                 f.write(f"{step}, {val_loss_accum.item():.4f}\n")
-
     # once in a while generate from the model
     if step % 100 == 0:
         model.eval()
