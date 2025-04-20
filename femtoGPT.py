@@ -299,7 +299,9 @@ class DataLoader:
         y = (buf[1:].view(B, T))
         self.current_position += B*T
         if self.current_position + (B*T+1) > len(self.tokens):
-            self.current_position = 0
+            self.current_shard = (self.current_shard + 1) % len(self.shards)
+            self.tokens = load_tokens(self.shards[self.current_shard])
+            self.current_position = B * T
         return x, y
 
 
