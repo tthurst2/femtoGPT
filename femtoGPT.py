@@ -336,9 +336,7 @@ def get_lr(it):
 
 
 # -----------------------------------------------------------------------------
-
 if __name__ == "__main__":
-    # autodetect device
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda"
@@ -380,7 +378,6 @@ if __name__ == "__main__":
     warmup_steps = 715
     max_steps = 19073
 
-    # optimize
     optimizer = model.configure_optimizers(
         weight_decay=0.1, learning_rate=6e-4, device=device
     )
@@ -388,8 +385,8 @@ if __name__ == "__main__":
     # log directory
     log_dir = "log"
 
-    train_loss_log = os.path.join(log_dir, f"train_loss.txt")
-    val_loss_log = os.path.join(log_dir, f"val_loss.txt")
+    train_loss_log = os.path.join(log_dir, "train_loss.txt")
+    val_loss_log = os.path.join(log_dir, "val_loss.txt")
 
     for step in range(max_steps):
         t0 = time.time()
