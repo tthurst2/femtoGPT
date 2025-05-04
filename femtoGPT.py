@@ -7,6 +7,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 import tiktoken
 import math
+import re
 from dataclasses import dataclass
 
 
@@ -320,7 +321,11 @@ class DataLoader:
         return x, y
 
 
-def get_lr(it):
+def get_lr(it, max_steps):
+    # learning rate decay from GPT-3 paper (since GPT-2 doesn't explain training)
+    max_lr = 1e-3
+    min_lr = max_lr * 0.1
+    warmup_steps = 715
     # 1) linear warmup for warmup_iters steps
     if it < warmup_steps:
         return max_lr * (it + 1) / warmup_steps
@@ -335,8 +340,12 @@ def get_lr(it):
     return min_lr + coeff * (max_lr - min_lr)
 
 
-# -----------------------------------------------------------------------------
-if __name__ == "__main__":
+"""
+model_file: A .pt torch.save file including the entire model(not just weights)
+"""
+
+
+def train(model_file=None):
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda"
@@ -344,10 +353,6 @@ if __name__ == "__main__":
     elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
         device = "mps"
     print(f"using device: {device}")
-
-    # Karpathy example
-    num_return_sequences = 5
-    max_length = 30
 
     torch.manual_seed(1337)
     if torch.cuda.is_available():
@@ -367,16 +372,18 @@ if __name__ == "__main__":
     val_loader = DataLoader(B=B, T=T, split="val")
 
     torch.set_float32_matmul_precision("high")
-
-    model = GPT(GPTConfig(vocab_size=50304))
+    # if we include a model_file, continue training from that point
+    if model_file is None:
+        model = GPT(GPTConfig(vocab_size=50304))
+        start_step = 0
+    else:
+        model = torch.load(model_file, weights_only=False)
+        # will find the first number to find its current steps
+        start_step = int(re.search(r"\d+", model_file)[0])
     model.to(device)
     model = torch.compile(model)
 
-    # learning rate decay from GPT-3 paper (since GPT-2 doesn't explain training)
-    max_lr = 1e-3
-    min_lr = max_lr * 0.1
-    warmup_steps = 715
-    max_steps = 19073
+    max_steps = 19073 * 2
 
     optimizer = model.configure_optimizers(
         weight_decay=0.1, learning_rate=6e-4, device=device
@@ -387,8 +394,8 @@ if __name__ == "__main__":
 
     train_loss_log = os.path.join(log_dir, "train_loss.txt")
     val_loss_log = os.path.join(log_dir, "val_loss.txt")
-
-    for step in range(max_steps):
+    # TRAINING LOOP
+    for step in range(start_step, max_steps):
         t0 = time.time()
         # evaluation loop
         # once in a while save model weights
@@ -452,7 +459,7 @@ if __name__ == "__main__":
 
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         # determine and set the learning rate for this iteration
-        lr = get_lr(step)
+        lr = get_lr(step, max_steps)
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
         optimizer.step()
@@ -467,3 +474,7 @@ if __name__ == "__main__":
         )
         with open(train_loss_log, "a") as f:
             f.write(f"{step}, {loss_accum.item():.6f}\n")
+
+
+if __name__ == "__main__":
+    train("./log/step_19000_weights.pt")
